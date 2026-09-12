@@ -339,6 +339,7 @@ async def cb_done(c: CallbackQuery):
         "🔎 Нажми «Найти взаимку», чтобы получить следующее задание.",
         reply_markup=main_menu()
     )
+
 async def show_profile(message: Message):
     tg_id = message.from_user.id
     conn = db()
