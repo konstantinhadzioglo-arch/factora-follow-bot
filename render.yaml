@@ -1,0 +1,13 @@
+services:
+  - type: worker
+    name: factora-follow-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+    disk:
+      name: factora-data
+      mountPath: /opt/render/project/src
+      sizeGB: 1
