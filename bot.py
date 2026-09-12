@@ -259,7 +259,7 @@ async def text_handler(message: Message):
         finally:
             conn.close()
         await message.answer(
-            if"✅ <b>{platform.title()}</b> аккаунт сохранён!\n\n{url}",
+            f"✅ <b>{platform.title()}</b> аккаунт сохранён!\n\n{url}",
             reply_markup=main_menu()
         )
         return
