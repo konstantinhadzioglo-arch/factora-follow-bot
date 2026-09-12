@@ -259,7 +259,7 @@ async def text_handler(message: Message):
         finally:
             conn.close()
         await message.answer(
-            f"✅ <b>{platform.title()}</b> аккаунт сохранён!\n\n{url}",
+            if"✅ <b>{platform.title()}</b> аккаунт сохранён!\n\n{url}",
             reply_markup=main_menu()
         )
         return
@@ -269,6 +269,28 @@ async def main():
     init_db()
     bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     await dp.start_polling(bot)
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Factora Follow Bot is running!")
+
+    def log_message(self, format, *args):
+        pass
+
+
+def run_web():
+    port = int(os.environ.get("PORT", "10000"))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    server.serve_forever()
+
+
+threading.Thread(target=run_web, daemon=True).start()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
