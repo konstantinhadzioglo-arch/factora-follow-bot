@@ -195,17 +195,71 @@ async def cb_find(c: CallbackQuery):
 
 async def show_matches(message: Message, tg_id=None):
     tg_id = tg_id or message.from_user.id
+
     conn = db()
     rows = conn.execute("""
-        SELECT p.platform, p.url, u.first_name, u.username
-        FROM profiles p JOIN users u ON u.tg_id=p.tg_id
-        WHERE p.active=1 AND p.tg_id != ?
-        ORDER BY RANDOM() LIMIT 5
-    """, (tg_id,)).fetchall()
+    SELECT p.id, p.platform, p.url, u.first_name, u.username
+    FROM profiles p
+    JOIN users u ON u.tg_id=p.tg_id
+    WHERE p.active=1
+      AND p.tg_id != ?
+      AND NOT EXISTS (
+          SELECT 1 FROM tasks t
+          WHERE t.worker_tg_id=?
+            AND t.profile_id=p.id
+            AND t.completed=1
+      )
+    ORDER BY RANDOM()
+    LIMIT 5
+    """, (tg_id, tg_id)).fetchall()
     conn.close()
+
     if not rows:
-        await message.answer("🔎 Пока нет других активных профилей. Добавь свой аккаунт первым.", reply_markup=back())
+        await message.answer(
+            "🔎 Пока нет новых заданий.\n\n"
+            "Добавь свой аккаунт или попробуй позже.",
+            reply_markup=back()
+        )
         return
+
+    for r in rows:
+        name = ("@" + r["username"]) if r["username"] else r["first_name"] or "Участник"
+
+        label = {
+            "instagram": "Instagram",
+            "tiktok": "TikTok",
+            "telegram": "Telegram"
+        }.get(r["platform"], r["platform"].title())
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"👉 Перейти в {label}",
+                    url=r["url"]
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✅ Я подписался",
+                    callback_data=f"done:{r['id']}"
+                )
+            ]
+        ])
+
+        await message.answer(
+            f"👤 <b>{name}</b>\n"
+            f"📱 Платформа: <b>{label}</b>\n\n"
+            "1️⃣ Перейди на аккаунт\n"
+            "2️⃣ Подпишись\n"
+            "3️⃣ Нажми «Я подписался»\n\n"
+            "⭐ За выполнение: +1 балл",
+            reply_markup=keyboard
+        )
+
+    await message.answer(
+        "🔎 Готово! Выполняй задания и получай ⭐",
+        reply_markup=back()
+    )
     text = "🔎 <b>Наши участники</b>\n\n"
     for r in rows:
         name = ("@" + r["username"]) if r["username"] else r["first_name"] or "Участник"
@@ -213,6 +267,78 @@ async def show_matches(message: Message, tg_id=None):
     text += "🤝 Подпишись на понравившиеся профили."
     await message.answer(text, reply_markup=back())
 
+@dp.callback_query(F.data.startswith("done:"))
+async def cb_done(c: CallbackQuery):
+    profile_id = int(c.data.split(":", 1)[1])
+    worker_id = c.from_user.id
+
+    conn = db()
+
+    row = conn.execute("""
+    SELECT tg_id, platform, url
+    FROM profiles
+    WHERE id=? AND active=1
+    """, (profile_id,)).fetchone()
+
+    if not row or row["tg_id"] == worker_id:
+        conn.close()
+        await c.answer(
+            "❌ Это задание недоступно.",
+            show_alert=True
+        )
+        return
+
+    existing = conn.execute("""
+    SELECT id, completed
+    FROM tasks
+    WHERE worker_tg_id=? AND profile_id=?
+    """, (worker_id, profile_id)).fetchone()
+
+    if existing and existing["completed"]:
+        conn.close()
+        await c.answer(
+            "Это задание уже выполнено.",
+            show_alert=True
+        )
+        return
+
+    if existing:
+        conn.execute("""
+        UPDATE tasks
+        SET completed=1
+        WHERE id=?
+        """, (existing["id"],))
+    else:
+        conn.execute("""
+        INSERT INTO tasks(worker_tg_id, profile_id, completed)
+        VALUES (?, ?, 1)
+        """, (worker_id, profile_id))
+
+    conn.execute(
+        "UPDATE users SET points=points+1 WHERE tg_id=?",
+        (worker_id,)
+    )
+
+    conn.execute(
+        "UPDATE users SET points=points+1 WHERE tg_id=?",
+        (row["tg_id"],)
+    )
+
+    conn.commit()
+    conn.close()
+
+    await c.answer(
+        "✅ Подписка отмечена! +1 ⭐",
+        show_alert=True
+    )
+
+    await c.message.answer(
+        "🔥 <b>Задание выполнено!</b>\n\n"
+        "Ты получил: <b>+1 ⭐</b>\n"
+        "Владелец аккаунта тоже получил: <b>+1 ⭐</b>\n\n"
+        "🔎 Нажми «Найти взаимку», чтобы получить следующее задание.",
+        reply_markup=main_menu()
+    )
 async def show_profile(message: Message):
     tg_id = message.from_user.id
     conn = db()
