@@ -1,4 +1,4 @@
-онimport os
+import os
 import sqlite3
 import asyncio
 from urllib.parse import urlparse
