@@ -260,12 +260,7 @@ async def show_matches(message: Message, tg_id=None):
         "🔎 Готово! Выполняй задания и получай ⭐",
         reply_markup=back()
     )
-    text = "🔎 <b>Наши участники</b>\n\n"
-    for r in rows:
-        name = ("@" + r["username"]) if r["username"] else r["first_name"] or "Участник"
-        text += f"• <b>{name}</b> | {r['platform'].title()}\n{r['url']}\n\n"
-    text += "🤝 Подпишись на понравившиеся профили."
-    await message.answer(text, reply_markup=back())
+    
 
 @dp.callback_query(F.data.startswith("done:"))
 async def cb_done(c: CallbackQuery):
