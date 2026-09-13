@@ -425,8 +425,14 @@ async def cb_help(c: CallbackQuery):
 
 
    @dp.message(Command("users"))
-@dp.message(Command("users"))
-async def users_cmd(message: Message):
+@dp.message()
+async def text_handler(message: Message):
+    upsert_user(message)
+    tg_id = message.from_user.id
+
+    if tg_id in waiting:
+        platform = waiting.pop(tg_id)
+        url = message.text.strip()
     if message.from_user.id != ADMIN_ID:
         return
 
