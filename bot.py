@@ -1,4 +1,4 @@
-import os
+онimport os
 import sqlite3
 import asyncio
 from urllib.parse import urlparse
@@ -423,8 +423,8 @@ async def cb_help(c: CallbackQuery):
     await help_cmd(c.message)
     await c.answer()
 
-@dp.message(Command("users"))
-  async def users_cmd(message: Message):
+@dp.message(Command("users")) 
+async def users_cmd(message: Message):
     if message.from_user.id != ADMIN_ID:
         return
 
@@ -493,7 +493,7 @@ async def text_handler(message: Message):
         "Выбери действие в меню 👇",
         reply_markup=main_menu()
     )
-    await message.answer("Выбери действие в меню 👇", reply_markup=main_menu())
+
 
 async def main():
     init_db()
