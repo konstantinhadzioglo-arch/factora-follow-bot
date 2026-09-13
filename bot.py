@@ -42,7 +42,7 @@ def init_db():
         UNIQUE(tg_id, platform)
     )
     """)
-            conn.execute("""
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         worker_tg_id INTEGER NOT NULL,
