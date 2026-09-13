@@ -424,37 +424,7 @@ async def cb_help(c: CallbackQuery):
     await c.answer()
 
 
-   @dp.message(Command("users"))
-@dp.message()
-async def text_handler(message: Message):
-    upsert_user(message)
-    tg_id = message.from_user.id
-
-    if tg_id in waiting:
-        platform = waiting.pop(tg_id)
-        url = message.text.strip()
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    conn = db()
-
-    rows = conn.execute("""
-    SELECT username, first_name, points
-    FROM users
-    ORDER BY points DESC
-    """).fetchall()
-
-    conn.close()
-
-    text = "👥 <b>Участники бота</b>\n\n"
-
-    for i, r in enumerate(rows, 1):
-        name = f"@{r['username']}" if r["username"] else (r["first_name"] or "Без имени")
-        text += f"{i}. {name} — ⭐ {r['points']}\n"
-
-    text += f"\n<b>Всего участников:</b> {len(rows)}"
-
-    await message.answer(text)
+  
 
 
 @dp.message()
