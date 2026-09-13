@@ -10,6 +10,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = 753519761
 if not TOKEN:
     raise RuntimeError("BOT_TOKEN environment variable is missing")
 
@@ -424,32 +425,76 @@ async def cb_help(c: CallbackQuery):
 
 
    @dp.message(Command("users"))
+@dp.message(Command("users"))
 async def users_cmd(message: Message):
-    
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    conn = db()
+
+    rows = conn.execute("""
+    SELECT username, first_name, points
+    FROM users
+    ORDER BY points DESC
+    """).fetchall()
+
+    conn.close()
+
+    text = "👥 <b>Участники бота</b>\n\n"
+
+    for i, r in enumerate(rows, 1):
+        name = f"@{r['username']}" if r["username"] else (r["first_name"] or "Без имени")
+        text += f"{i}. {name} — ⭐ {r['points']}\n"
+
+    text += f"\n<b>Всего участников:</b> {len(rows)}"
+
+    await message.answer(text)
+
+
+@dp.message()
+async def text_handler(message: Message):
     upsert_user(message)
+
     tg_id = message.from_user.id
+
     if tg_id in waiting:
         platform = waiting.pop(tg_id)
         url = message.text.strip()
+
         if not valid_url(url):
             waiting[tg_id] = platform
-            await message.answer("❌ Нужна полная ссылка, например https://instagram.com/username")
+            await message.answer(
+                "❌ Нужна полная ссылка, например https://instagram.com/username"
+            )
             return
+
         conn = db()
+
         try:
             conn.execute("""
             INSERT INTO profiles(tg_id, platform, url)
             VALUES (?, ?, ?)
-            ON CONFLICT(tg_id, platform) DO UPDATE SET url=excluded.url, active=1
+            ON CONFLICT(tg_id, platform) DO UPDATE SET
+                url=excluded.url,
+                active=1
             """, (tg_id, platform, url))
+
             conn.commit()
+
         finally:
             conn.close()
+
         await message.answer(
             f"✅ <b>{platform.title()}</b> аккаунт сохранён!\n\n{url}",
             reply_markup=main_menu()
         )
+
         return
+
+    await message.answer(
+        "Выбери действие в меню 👇",
+        reply_markup=main_menu()
+    )
     await message.answer("Выбери действие в меню 👇", reply_markup=main_menu())
 
 async def main():
