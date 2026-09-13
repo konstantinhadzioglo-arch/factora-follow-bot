@@ -38,8 +38,8 @@ def init_db():
         platform TEXT NOT NULL,
         url TEXT NOT NULL,
         active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(tg_id, platform)
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        
     )
     """)
     conn.execute("""
