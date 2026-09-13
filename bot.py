@@ -424,7 +424,29 @@ async def cb_help(c: CallbackQuery):
     await c.answer()
 
 
-  
+  async def users_cmd(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    conn = db()
+
+    rows = conn.execute("""
+    SELECT username, first_name, points
+    FROM users
+    ORDER BY points DESC
+    """).fetchall()
+
+    conn.close()
+
+    text = "👥 <b>Участники бота</b>\n\n"
+
+    for i, r in enumerate(rows, 1):
+        name = f"@{r['username']}" if r["username"] else (r["first_name"] or "Без имени")
+        text += f"{i}. {name} — ⭐ {r['points']}\n"
+
+    text += f"\n<b>Всего участников:</b> {len(rows)}"
+
+    await message.answer(text)
 
 
 @dp.message()
