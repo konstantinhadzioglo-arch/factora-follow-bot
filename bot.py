@@ -423,7 +423,7 @@ async def cb_help(c: CallbackQuery):
     await help_cmd(c.message)
     await c.answer()
 
-
+@dp.message(Command("users"))
   async def users_cmd(message: Message):
     if message.from_user.id != ADMIN_ID:
         return
