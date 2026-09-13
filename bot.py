@@ -429,7 +429,8 @@ async def users_cmd(message: Message):
     upsert_user(message)
     tg_id = message.from_user.id
     if tg_id in waiting:
-        platform = waiting.pop(tg_id)url = message.text.strip()
+        platform = waiting.pop(tg_id)
+        url = message.text.strip()
         if not valid_url(url):
             waiting[tg_id] = platform
             await message.answer("❌ Нужна полная ссылка, например https://instagram.com/username")
