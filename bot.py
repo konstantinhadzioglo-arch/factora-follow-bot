@@ -337,18 +337,70 @@ async def cb_done(c: CallbackQuery):
 
 async def show_profile(message: Message):
     tg_id = message.from_user.id
+
     conn = db()
-    rows = conn.execute("SELECT platform, url FROM profiles WHERE tg_id=? AND active=1", (tg_id,)).fetchall()
-    u = conn.execute("SELECT points FROM users WHERE tg_id=?", (tg_id,)).fetchone()
+
+    profiles = conn.execute("""
+    SELECT platform, url
+    FROM profiles
+    WHERE tg_id=? AND active=1
+    """, (tg_id,)).fetchall()
+
+    user = conn.execute("""
+    SELECT points
+    FROM users
+    WHERE tg_id=?
+    """, (tg_id,)).fetchone()
+
+    completed = conn.execute("""
+    SELECT COUNT(*) AS count
+    FROM tasks
+    WHERE worker_tg_id=? AND completed=1
+    """, (tg_id,)).fetchone()
+
+    received = conn.execute("""
+    SELECT COUNT(*) AS count
+    FROM tasks t
+    JOIN profiles p ON p.id=t.profile_id
+    WHERE p.tg_id=? AND t.completed=1
+    """, (tg_id,)).fetchone()
+
+    points = user["points"] if user else 0
+
+    rank = conn.execute("""
+    SELECT COUNT(*) + 1 AS rank
+    FROM users
+    WHERE points > ?
+    """, (points,)).fetchone()
+
     conn.close()
+
     text = "👤 <b>Мой профиль</b>\n\n"
-    if not rows:
-        text += "У тебя пока нет добавленных аккаунтов."
+
+    text += f"⭐ <b>Баллы:</b> {points}\n"
+    text += f"🏆 <b>Место в рейтинге:</b> #{rank['rank']}\n"
+    text += f"✅ <b>Выполнено заданий:</b> {completed['count']}\n"
+    text += f"👥 <b>Получено подписок:</b> {received['count']}\n\n"
+
+    text += "📱 <b>Мои аккаунты:</b>\n\n"
+
+    if not profiles:
+        text += "Пока нет добавленных аккаунтов."
     else:
-        for r in rows:
-            text += f"• {r['platform'].title()}: {r['url']}\n"
-        text += f"\n⭐ Баллы: {u['points'] if u else 0}"
-    await message.answer(text, reply_markup=main_menu())
+        for p in profiles:
+            label = {
+                "instagram": "📸 Instagram",
+                "tiktok": "🎵 TikTok",
+                "telegram": "✈️ Telegram"
+            }.get(p["platform"], p["platform"].title())
+
+            text += f"{label}\n"
+            text += f"{p['url']}\n\n"
+
+    await message.answer(
+        text,
+        reply_markup=main_menu()
+    )
 
 @dp.callback_query(F.data == "profile")
 async def cb_profile(c: CallbackQuery):
