@@ -53,7 +53,7 @@ def init_db():
         UNIQUE(worker_tg_id, profile_id)
     )
     """)
-
+    conn = db()
     conn.execute("""
     CREATE TABLE IF NOT EXISTS promotions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
