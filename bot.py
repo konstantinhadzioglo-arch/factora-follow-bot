@@ -54,7 +54,7 @@ def init_db():
     )
     """)
 
-        conn.execute("""
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS promotions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tg_id INTEGER NOT NULL,
@@ -198,7 +198,14 @@ async def cb_platform(c: CallbackQuery):
         reply_markup=back()
     )
     await c.answer()
+@dp.message()
+async def text_handler(message: Message):
+    tg_id = message.from_user.id
 
+    if tg_id not in waiting:
+        return
+
+    platform
 @dp.callback_query(F.data == "find")
 async def cb_find(c: CallbackQuery):
     await show_matches(c.message, c.from_user.id)
@@ -652,6 +659,61 @@ async def cb_help(c: CallbackQuery):
     await help_cmd(c.message)
     await c.answer()
 
+@dp.message()
+async def text_handler(message: Message):
+    tg_id = message.from_user.id
+
+    if tg_id not in waiting:
+        return
+
+    platform = waiting[tg_id]
+    url = message.text.strip() if message.text else ""
+
+    if not valid_url(url):
+        await message.answer(
+            "❌ Это не похоже на правильную ссылку.\n\n"
+            "Отправь полную ссылку, например:\n"
+            "https://instagram.com/username"
+        )
+        return
+
+    conn = db()
+
+    existing = conn.execute("""
+    SELECT id
+    FROM profiles
+    WHERE tg_id=? AND platform=?
+    """, (tg_id, platform)).fetchone()
+
+    if existing:
+        conn.execute("""
+        UPDATE profiles
+        SET url=?, active=1
+        WHERE id=?
+        """, (url, existing["id"]))
+    else:
+        conn.execute("""
+        INSERT INTO profiles(tg_id, platform, url, active)
+        VALUES (?, ?, ?, 1)
+        """, (tg_id, platform, url))
+
+    conn.commit()
+    conn.close()
+
+    del waiting[tg_id]
+
+    label = {
+        "instagram": "Instagram",
+        "tiktok": "TikTok",
+        "telegram": "Telegram"
+    }.get(platform, platform)
+
+    await message.answer(
+        f"✅ <b>{label} сохранён!</b>\n\n"
+        f"🔗 {url}\n\n"
+        "Теперь другие участники смогут увидеть его в заданиях.",
+        reply_markup=main_menu()
+    )
 @dp.message(Command("users")) 
 async def users_cmd(message: Message):
     if message.from_user.id != ADMIN_ID:
