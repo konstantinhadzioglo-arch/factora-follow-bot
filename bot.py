@@ -64,8 +64,8 @@ def init_db():
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
-conn.commit()
-conn.close()
+    conn.commit()
+    conn.close()
 
 def upsert_user(message: Message):
     u = message.from_user
