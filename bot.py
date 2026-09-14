@@ -1,5 +1,6 @@
 import os
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import asyncio
 from urllib.parse import urlparse
 
@@ -14,56 +15,78 @@ ADMIN_ID = 753519761
 if not TOKEN:
     raise RuntimeError("BOT_TOKEN environment variable is missing")
 
-DB = "factora.db"
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is missing")
+
+
+class DBConnection:
+    def __init__(self):
+        self.conn = psycopg2.connect(DATABASE_URL)
+
+    def execute(self, query, params=None):
+        cursor = self.conn.cursor(cursor_factory=RealDictCursor)
+        query = query.replace("?", "%s")
+        cursor.execute(query, params or ())
+        return cursor
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
 
 def db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return DBConnection()
 
 def init_db():
     conn = db()
+
     conn.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        tg_id INTEGER PRIMARY KEY,
+        tg_id BIGINT PRIMARY KEY,
         username TEXT,
         first_name TEXT,
         points INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
     conn.execute("""
     CREATE TABLE IF NOT EXISTS profiles (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tg_id INTEGER NOT NULL,
+        id SERIAL PRIMARY KEY,
+        tg_id BIGINT NOT NULL,
         platform TEXT NOT NULL,
         url TEXT NOT NULL,
         active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
     conn.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        worker_tg_id INTEGER NOT NULL,
+        id SERIAL PRIMARY KEY,
+        worker_tg_id BIGINT NOT NULL,
         profile_id INTEGER NOT NULL,
         completed INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(worker_tg_id, profile_id)
     )
     """)
-    conn = db()
+
     conn.execute("""
     CREATE TABLE IF NOT EXISTS promotions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tg_id INTEGER NOT NULL,
+        id SERIAL PRIMARY KEY,
+        tg_id BIGINT NOT NULL,
         profile_id INTEGER NOT NULL,
         promotion_type TEXT NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
     conn.commit()
     conn.close()
 
