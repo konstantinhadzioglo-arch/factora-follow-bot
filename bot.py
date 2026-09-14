@@ -675,14 +675,10 @@ async def users_cmd(message: Message):
 
     text += f"\n<b>Всего участников:</b> {len(rows)}"
 
-    await message.answer 
+    await message.answer(text) 
     
 
 
-async def main():
-    init_db()
-    bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    await dp.start_polling(bot)
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -691,7 +687,7 @@ class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Factora Follow Bot is running!")
+        self.wfile.write(b"Factora Follow Bot is running")
 
     def log_message(self, format, *args):
         pass
@@ -703,8 +699,19 @@ def run_web():
     server.serve_forever()
 
 
-threading.Thread(target=run_web, daemon=True).start()
+async def main():
+    init_db()
+
+    threading.Thread(target=run_web, daemon=True).start()
+
+    bot = Bot(
+        TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
+
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
