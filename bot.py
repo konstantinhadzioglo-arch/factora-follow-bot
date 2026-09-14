@@ -421,7 +421,7 @@ async def cb_buy_promo(c: CallbackQuery):
     conn.execute("""
     INSERT INTO promotions
     (tg_id, profile_id, promotion_type, expires_at)
-    VALUES (?, ?, ?, datetime('now', '+1 day'))
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP + INTERVAL '1 day')
     """, (tg_id, profile_id, promo_type))
 
     conn.commit()
