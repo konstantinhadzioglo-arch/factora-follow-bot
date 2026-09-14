@@ -675,7 +675,7 @@ async def cb_help(c: CallbackQuery):
     await help_cmd(c.message)
     await c.answer()
 
-@dp.message()
+@dp.message(F.text & ~F.text.startswith("/"))
 async def text_handler(message: Message):
     tg_id = message.from_user.id
 
