@@ -221,14 +221,7 @@ async def cb_platform(c: CallbackQuery):
         reply_markup=back()
     )
     await c.answer()
-@dp.message()
-async def text_handler(message: Message):
-    tg_id = message.from_user.id
 
-    if tg_id not in waiting:
-        return
-
-    platform
 @dp.callback_query(F.data == "find")
 async def cb_find(c: CallbackQuery):
     await show_matches(c.message, c.from_user.id)
