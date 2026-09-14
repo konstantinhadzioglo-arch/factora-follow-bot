@@ -54,8 +54,18 @@ def init_db():
     )
     """)
 
-    conn.commit()
-    conn.close()
+        conn.execute("""
+    CREATE TABLE IF NOT EXISTS promotions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tg_id INTEGER NOT NULL,
+        profile_id INTEGER NOT NULL,
+        promotion_type TEXT NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+conn.commit()
+conn.close()
 
 def upsert_user(message: Message):
     u = message.from_user
@@ -79,7 +89,7 @@ def main_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Добавить аккаунт", callback_data="add")],
         [InlineKeyboardButton(text="🔎 Найти взаимку", callback_data="find")],
-        [InlineKeyboardButton(text="👤 Мой профиль", callback_data="profile")],
+        [InlineKeyboardButton(text="⭐ Потратить баллы", callback_data="spend")],[InlineKeyboardButton(text="👤 Мой профиль", callback_data="profile")],
         [InlineKeyboardButton(text="🏆 Рейтинг", callback_data="rating")],
         [InlineKeyboardButton(text="📖 Правила", callback_data="rules"),
          InlineKeyboardButton(text="❓ Помощь", callback_data="help")]
@@ -193,6 +203,225 @@ async def cb_platform(c: CallbackQuery):
 async def cb_find(c: CallbackQuery):
     await show_matches(c.message, c.from_user.id)
     await c.answer()
+@dp.callback_query(F.data == "spend")
+async def cb_spend(c: CallbackQuery):
+    tg_id = c.from_user.id
+
+    conn = db()
+    rows = conn.execute("""
+    SELECT id, platform, url
+    FROM profiles
+    WHERE tg_id=? AND active=1
+    ORDER BY id
+    """, (tg_id,)).fetchall()
+
+    user = conn.execute("""
+    SELECT points
+    FROM users
+    WHERE tg_id=?
+    """, (tg_id,)).fetchone()
+
+    conn.close()
+
+    points = user["points"] if user else 0
+
+    if not rows:
+        await c.message.edit_text(
+            "⭐ <b>Баланс</b>\n\n"
+            f"У тебя: <b>{points} ⭐</b>\n\n"
+            "Сначала добавь свой аккаунт.",
+            reply_markup=back()
+        )
+        await c.answer()
+        return
+
+    keyboard = []
+
+    for r in rows:
+        label = {
+            "instagram": "📸 Instagram",
+            "tiktok": "🎵 TikTok",
+            "telegram": "✈️ Telegram"
+        }.get(r["platform"], r["platform"])
+
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"{label}",
+                callback_data=f"promo_profile:{r['id']}"
+            )
+        ])
+
+    keyboard.append([
+        InlineKeyboardButton(
+            text="⬅️ Назад",
+            callback_data="home"
+        )
+    ])
+
+    await c.message.edit_text(
+        "⭐ <b>Баланс</b>\n\n"
+        f"Твой баланс: <b>{points} ⭐</b>\n\n"
+        "Выбери аккаунт, который хочешь продвинуть:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
+    )
+
+    await c.answer()
+
+
+@dp.callback_query(F.data.startswith("promo_profile:"))
+async def cb_promo_profile(c: CallbackQuery):
+    profile_id = int(c.data.split(":", 1)[1])
+    tg_id = c.from_user.id
+
+    conn = db()
+
+    profile = conn.execute("""
+    SELECT platform, url
+    FROM profiles
+    WHERE id=? AND tg_id=? AND active=1
+    """, (profile_id, tg_id)).fetchone()
+
+    user = conn.execute("""
+    SELECT points
+    FROM users
+    WHERE tg_id=?
+    """, (tg_id,)).fetchone()
+
+    conn.close()
+
+    if not profile or not user:
+        await c.answer("Аккаунт не найден", show_alert=True)
+        return
+
+    points = user["points"]
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🚀 5 ⭐ — Поднять в выдаче",
+                callback_data=f"buy_promo:{profile_id}:boost:5"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🔥 10 ⭐ — Популярные",
+                callback_data=f"buy_promo:{profile_id}:popular:10"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="📌 20 ⭐ — Закрепить выше",
+                callback_data=f"buy_promo:{profile_id}:pin:20"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="👑 30 ⭐ — VIP на сутки",
+                callback_data=f"buy_promo:{profile_id}:vip:30"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🚀 50 ⭐ — Массовое продвижение",
+                callback_data=f"buy_promo:{profile_id}:mass:50"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="⬅️ Назад",
+                callback_data="spend"
+            )
+        ]
+    ])
+
+    await c.message.edit_text(
+        "⭐ <b>Продвижение аккаунта</b>\n\n"
+        f"Твой баланс: <b>{points} ⭐</b>\n\n"
+        "Выбери способ продвижения:",
+        reply_markup=keyboard
+    )
+
+    await c.answer()
+
+
+@dp.callback_query(F.data.startswith("buy_promo:"))
+async def cb_buy_promo(c: CallbackQuery):
+    parts = c.data.split(":")
+
+    profile_id = int(parts[1])
+    promo_type = parts[2]
+    cost = int(parts[3])
+
+    tg_id = c.from_user.id
+
+    conn = db()
+
+    profile = conn.execute("""
+    SELECT id
+    FROM profiles
+    WHERE id=? AND tg_id=? AND active=1
+    """, (profile_id, tg_id)).fetchone()
+
+    user = conn.execute("""
+    SELECT points
+    FROM users
+    WHERE tg_id=?
+    """, (tg_id,)).fetchone()
+
+    if not profile or not user:
+        conn.close()
+        await c.answer("Аккаунт не найден", show_alert=True)
+        return
+
+    if user["points"] < cost:
+        conn.close()
+
+        await c.answer(
+            f"Недостаточно ⭐. Нужно {cost} ⭐",
+            show_alert=True
+        )
+        return
+
+    conn.execute("""
+    UPDATE users
+    SET points = points - ?
+    WHERE tg_id=?
+    """, (cost, tg_id))
+
+    conn.execute("""
+    INSERT INTO promotions
+    (tg_id, profile_id, promotion_type, expires_at)
+    VALUES (?, ?, ?, datetime('now', '+1 day'))
+    """, (tg_id, profile_id, promo_type))
+
+    conn.commit()
+
+    new_balance = user["points"] - cost
+
+    conn.close()
+
+    names = {
+        "boost": "🚀 Аккаунт поднят в выдаче",
+        "popular": "🔥 Аккаунт добавлен в «Популярные»",
+        "pin": "📌 Аккаунт закреплён выше остальных",
+        "vip": "👑 VIP-продвижение активировано на 24 часа",
+        "mass": "🚀 Массовое продвижение активировано"
+    }
+
+    result = names.get(
+        promo_type,
+        "✅ Продвижение активировано"
+    )
+
+    await c.message.edit_text(
+        f"{result}\n\n"
+        f"Списано: <b>{cost} ⭐</b>\n"
+        f"Осталось: <b>{new_balance} ⭐</b>\n\n"
+        "Продвижение действует <b>24 часа</b>.",
+        reply_markup=back()
+    )
+
+    await c.answer("✅ Оплата прошла")
 
 async def show_matches(message: Message, tg_id=None):
     tg_id = tg_id or message.from_user.id
