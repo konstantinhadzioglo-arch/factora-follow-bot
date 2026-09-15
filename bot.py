@@ -656,7 +656,7 @@ async def show_profile(message: Message):
 
 @dp.callback_query(F.data == "profile")
 async def cb_profile(c: CallbackQuery):
-    await show_profile(c.message)
+    await show_profile(c.message, c.from_user.id)
     await c.answer()
 
 @dp.callback_query(F.data == "rating")
