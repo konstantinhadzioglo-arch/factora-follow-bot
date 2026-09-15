@@ -373,6 +373,7 @@ async def cb_buy_promo(c: CallbackQuery):
     promo_type = parts[2]
     cost = int(parts[3])
     days = int(parts[4])
+    
     tg_id = c.from_user.id
 
     conn = db()
