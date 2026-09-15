@@ -123,6 +123,7 @@ def platforms():
         [InlineKeyboardButton(text="📸 Instagram", callback_data="platform:instagram")],
         [InlineKeyboardButton(text="🎵 TikTok", callback_data="platform:tiktok")],
         [InlineKeyboardButton(text="✈️ Telegram", callback_data="platform:telegram")],
+        [InlineKeyboardButton(text="🧵 Threads", callback_data="platform:threads")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="home")]
     ])
 
