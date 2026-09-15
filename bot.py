@@ -214,12 +214,14 @@ async def cb_add(c: CallbackQuery):
 async def cb_platform(c: CallbackQuery):
     platform = c.data.split(":", 1)[1]
     waiting[c.from_user.id] = platform
-label = {
-    "instagram": "Instagram",
-    "tiktok": "TikTok",
-    "telegram": "Telegram",
-    "threads": "Threads"
-}[platform]
+
+    label = {
+        "instagram": "Instagram",
+        "tiktok": "TikTok",
+        "telegram": "Telegram",
+        "threads": "Threads"
+    }[platform]
+
     await c.message.edit_text(
         f"📌 Платформа: <b>{label}</b>\n\n"
         "Отправь полную ссылку на свой профиль.\n"
@@ -326,43 +328,32 @@ async def cb_promo_profile(c: CallbackQuery):
     points = user["points"]
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="🚀 5 ⭐ — Поднять в выдаче",
-                callback_data=f"buy_promo:{profile_id}:boost:5"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="🔥 10 ⭐ — Популярные",
-                callback_data=f"buy_promo:{profile_id}:popular:10"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="📌 20 ⭐ — Закрепить выше",
-                callback_data=f"buy_promo:{profile_id}:pin:20"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="👑 30 ⭐ — VIP на сутки",
-                callback_data=f"buy_promo:{profile_id}:vip:30"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="🚀 50 ⭐ — Массовое продвижение",
-                callback_data=f"buy_promo:{profile_id}:mass:50"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="⬅️ Назад",
-                callback_data="spend"
-            )
-        ]
-    ])
+    [
+        InlineKeyboardButton(
+            text="🚀 100 ⭐ — 24 часа",
+            callback_data=f"buy_promo:{profile_id}:day1:100:1"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="🚀 250 ⭐ — 3 дня",
+            callback_data=f"buy_promo:{profile_id}:day3:250:3"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="🚀 500 ⭐ — 7 дней",
+            callback_data=f"buy_promo:{profile_id}:day7:500:7"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="⬅️ Назад",
+            callback_data="spend"
+        )
+    ]
+])
+ 
 
     await c.message.edit_text(
         "⭐ <b>Продвижение аккаунта</b>\n\n"
