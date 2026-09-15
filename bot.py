@@ -213,7 +213,12 @@ async def cb_add(c: CallbackQuery):
 async def cb_platform(c: CallbackQuery):
     platform = c.data.split(":", 1)[1]
     waiting[c.from_user.id] = platform
-    label = {"instagram":"Instagram", "tiktok":"TikTok", "telegram":"Telegram"}[platform]
+label = {
+    "instagram": "Instagram",
+    "tiktok": "TikTok",
+    "telegram": "Telegram",
+    "threads": "Threads"
+}[platform]
     await c.message.edit_text(
         f"📌 Платформа: <b>{label}</b>\n\n"
         "Отправь полную ссылку на свой профиль.\n"
