@@ -262,10 +262,11 @@ async def cb_spend(c: CallbackQuery):
 
     for r in rows:
         label = {
-            "instagram": "📸 Instagram",
-            "tiktok": "🎵 TikTok",
-            "telegram": "✈️ Telegram"
-        }.get(r["platform"], r["platform"])
+    "instagram": "📸 Instagram",
+    "tiktok": "🎵 TikTok",
+    "telegram": "✈️ Telegram",
+    "threads": "🧵 Threads"
+}.get(r["platform"], r["platform"])
 
         keyboard.append([
             InlineKeyboardButton(
