@@ -587,9 +587,8 @@ async def cb_done(c: CallbackQuery):
         reply_markup=main_menu()
     )
 
-async def show_profile(message: Message):
-    tg_id = message.from_user.id
-
+async def show_profile(message: Message, tg_id=None):
+    tg_id = tg_id or message.from_user.id
     conn = db()
 
     profiles = conn.execute("""
