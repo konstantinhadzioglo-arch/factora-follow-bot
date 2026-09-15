@@ -229,7 +229,7 @@ label = {
     await c.answer()
 
 @dp.callback_query(F.data == "find")
-async def cb_find(c: CallbackQuery):
+async def cb_find(c:CallbackQuery):
     await show_matches(c.message, c.from_user.id)
     await c.answer()
 @dp.callback_query(F.data == "spend")
