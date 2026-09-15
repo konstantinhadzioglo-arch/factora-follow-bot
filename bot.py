@@ -412,10 +412,10 @@ async def cb_buy_promo(c: CallbackQuery):
     """, (cost, tg_id))
 
     conn.execute("""
-    INSERT INTO promotions
-    (tg_id, profile_id, promotion_type, expires_at)
-    VALUES (?, ?, ?, CURRENT_TIMESTAMP + INTERVAL '1 day')
-    """, (tg_id, profile_id, promo_type))
+INSERT INTO promotions
+(tg_id, profile_id, promotion_type, expires_at)
+VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
+""", (tg_id, profile_id, promo_type, days))
 
     conn.commit()
 
@@ -440,7 +440,7 @@ async def cb_buy_promo(c: CallbackQuery):
         f"{result}\n\n"
         f"Списано: <b>{cost} ⭐</b>\n"
         f"Осталось: <b>{new_balance} ⭐</b>\n\n"
-        "Продвижение действует <b>24 часа</b>.",
+        f"Продвижение действует <b>{days} день</b>.",
         reply_markup=back()
     )
 
