@@ -453,6 +453,9 @@ async def show_matches(message: Message, tg_id=None):
     SELECT p.id, p.platform, p.url, u.first_name, u.username
     FROM profiles p
     JOIN users u ON u.tg_id=p.tg_id
+        LEFT JOIN promotions pr
+        ON pr.profile_id=p.id
+        AND pr.expires_at > CURRENT_TIMESTAMP
     WHERE p.active=1
       AND p.tg_id != ?
       AND NOT EXISTS (
@@ -461,7 +464,17 @@ async def show_matches(message: Message, tg_id=None):
             AND t.profile_id=p.id
             AND t.completed=1
       )
-    ORDER BY RANDOM()
+        GROUP BY p.id, p.platform, p.url, u.first_name, u.username
+    ORDER BY
+        COALESCE(MAX(
+            CASE
+                WHEN pr.promotion_type = 'day7' THEN 3
+                WHEN pr.promotion_type = 'day3' THEN 2
+                WHEN pr.promotion_type = 'day1' THEN 1
+                ELSE 0
+            END
+        ), 0) DESC,
+        RANDOM()
     LIMIT 5
     """, (tg_id, tg_id)).fetchall()
     conn.close()
