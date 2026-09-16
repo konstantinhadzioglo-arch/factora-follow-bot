@@ -597,10 +597,9 @@ VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
 
     conn.commit()
 
-    new_balance = user["points"] - cost
-
-        conn.close()
-
+    new_balance = user["points"] - cost.           
+    conn.close()
+    
     names = {
         "day1": "🚀 Продвижение аккаунта на 24 часа",
         "day3": "🚀 Продвижение аккаунта на 3 дня",
