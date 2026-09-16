@@ -86,6 +86,16 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+        conn.execute("""
+    ALTER TABLE promotions
+    ADD COLUMN IF NOT EXISTS telegram_payment_charge_id TEXT
+    """)
+
+    conn.execute("""
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_promotions_payment
+    ON promotions(telegram_payment_charge_id)
+    WHERE telegram_payment_charge_id IS NOT NULL
+    """)
 
     conn.commit()
     conn.close()
@@ -488,12 +498,22 @@ async def successful_payment(message: Message):
         conn.close()
         return
 
-    conn.execute("""
-    INSERT INTO promotions
-    (tg_id, profile_id, promotion_type, expires_at)
-    VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
-    """, (tg_id, profile_id, promo_type, days))
+    cursor = conn.execute("""
+INSERT INTO promotions
+(tg_id, profile_id, promotion_type, expires_at, telegram_payment_charge_id)
+VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'), ?)
+ON CONFLICT DO NOTHING
+""", (
+    tg_id,
+    profile_id,
+    promo_type,
+    days,
+    payment.telegram_payment_charge_id
+))
 
+if cursor.rowcount == 0:
+    conn.close()
+    return
     conn.commit()
     conn.close()
 
