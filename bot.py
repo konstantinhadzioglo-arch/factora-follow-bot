@@ -597,7 +597,7 @@ VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
 
     conn.commit()
 
-    new_balance = user["points"] - cost.           
+    new_balance = user["points"] - cost          
     conn.close()
     
     names = {
