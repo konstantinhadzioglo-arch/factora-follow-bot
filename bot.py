@@ -86,7 +86,8 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
-        conn.execute("""
+
+    conn.execute("""
     ALTER TABLE promotions
     ADD COLUMN IF NOT EXISTS telegram_payment_charge_id TEXT
     """)
