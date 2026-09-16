@@ -531,7 +531,7 @@ ON CONFLICT DO NOTHING
         f"💎 Оплачено: <b>{stars} Stars</b>"
     )
 @dp.callback_query(F.data.startswith("buy_promo:"))
-async def cb_buy_promo(c: CallbackQuery):async def cb_buy_promo(c: CallbackQuery):
+async def cb_buy_promo(c: CallbackQuery):
     parts = c.data.split(":")
 
     profile_id = int(parts[1])
@@ -599,18 +599,20 @@ VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
 
     new_balance = user["points"] - cost
 
-    conn.close()
+        conn.close()
 
-names = {
-    "day1": "🚀 Продвижение аккаунта на 24 часа",
-    "day3": "🚀 Продвижение аккаунта на 3 дня",
-    "day7": "🚀 Продвижение аккаунта на 7 дней"
-}
-duration = {
-    1: "1 день",
-    3: "3 дня",
-    7: "7 дней"
-}.get(days, f"{days} дней")
+    names = {
+        "day1": "🚀 Продвижение аккаунта на 24 часа",
+        "day3": "🚀 Продвижение аккаунта на 3 дня",
+        "day7": "🚀 Продвижение аккаунта на 7 дней"
+    }
+
+    duration = {
+        1: "1 день",
+        3: "3 дня",
+        7: "7 дней"
+    }.get(days, f"{days} дней")
+
     result = names.get(
         promo_type,
         "✅ Продвижение активировано"
@@ -620,7 +622,7 @@ duration = {
         f"{result}\n\n"
         f"Списано: <b>{cost} ⭐</b>\n"
         f"Осталось: <b>{new_balance} ⭐</b>\n\n"
-        f"Продвижение действует <b>{duration}</b>."
+        f"Продвижение действует <b>{duration}</b>.",
         reply_markup=back()
     )
 
