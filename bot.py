@@ -612,7 +612,6 @@ VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
         3: "3 дня",
         7: "7 дней"
     }.get(days, f"{days} дней")
-
     result = names.get(
         promo_type,
         "✅ Продвижение активировано"
