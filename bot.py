@@ -439,10 +439,10 @@ async def cb_buy_stars(c: CallbackQuery):
     )
 
     await c.answer()
-    @dp.pre_checkout_query()
+@dp.pre_checkout_query()
 async def pre_checkout(query: PreCheckoutQuery):
     await query.answer(ok=True)
-    @dp.message(F.successful_payment)
+@dp.message(F.successful_payment)
 async def successful_payment(message: Message):
     payment = message.successful_payment
 
