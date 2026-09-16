@@ -148,7 +148,7 @@ waiting = {}
 
 WELCOME = """🚀 <b>FACTORA FOLLOW</b>
 
-Взаимные подписки для Instagram, TikTok и Telegram.
+Взаимные подписки для Instagram, TikTok, Telegram и Threads.
 
 Добавь свой аккаунт, находи других участников и развивай аудиторию вместе.
 
@@ -394,7 +394,6 @@ async def cb_promo_profile(c: CallbackQuery):
     await c.answer()
 
 
-@dp.callback_query(F.data.startswith("buy_promo:"))
 @dp.callback_query(F.data.startswith("buy_stars:"))
 async def cb_buy_stars(c: CallbackQuery):
     parts = c.data.split(":")
@@ -512,9 +511,10 @@ ON CONFLICT DO NOTHING
     payment.telegram_payment_charge_id
 ))
 
-if cursor.rowcount == 0:
-    conn.close()
-    return
+    if cursor.rowcount == 0:
+        conn.close()
+        return
+
     conn.commit()
     conn.close()
 
@@ -523,7 +523,8 @@ if cursor.rowcount == 0:
         f"🚀 Продвижение аккаунта активировано на <b>{days} дней</b>.\n"
         f"💎 Оплачено: <b>{stars} Stars</b>"
     )
-async def cb_buy_promo(c: CallbackQuery):
+@dp.callback_query(F.data.startswith("buy_promo:"))
+async def cb_buy_promo(c: CallbackQuery):async def cb_buy_promo(c: CallbackQuery):
     parts = c.data.split(":")
 
     profile_id = int(parts[1])
