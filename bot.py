@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, LabeledPrice, PreCheckoutQuery
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
@@ -348,6 +348,24 @@ async def cb_promo_profile(c: CallbackQuery):
     ],
     [
         InlineKeyboardButton(
+            text="💎 250 Stars — 24 часа",
+            callback_data=f"buy_stars:{profile_id}:day1:250:1"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="💎 500 Stars — 3 дня",
+            callback_data=f"buy_stars:{profile_id}:day3:500:3"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="💎 1000 Stars — 7 дней",
+            callback_data=f"buy_stars:{profile_id}:day7:1000:7"
+        )
+    ],
+    [
+        InlineKeyboardButton(
             text="⬅️ Назад",
             callback_data="spend"
         )
@@ -366,6 +384,124 @@ async def cb_promo_profile(c: CallbackQuery):
 
 
 @dp.callback_query(F.data.startswith("buy_promo:"))
+@dp.callback_query(F.data.startswith("buy_stars:"))
+async def cb_buy_stars(c: CallbackQuery):
+    parts = c.data.split(":")
+
+    profile_id = int(parts[1])
+    promo_type = parts[2]
+    stars = int(parts[3])
+    days = int(parts[4])
+
+    prices = {
+        "day1": 250,
+        "day3": 500,
+        "day7": 1000
+    }
+
+    if promo_type not in prices or stars != prices[promo_type]:
+        await c.answer("Ошибка тарифа", show_alert=True)
+        return
+
+    conn = db()
+
+    profile = conn.execute("""
+    SELECT id
+    FROM profiles
+    WHERE id=? AND tg_id=? AND active=1
+    """, (profile_id, c.from_user.id)).fetchone()
+
+    conn.close()
+
+    if not profile:
+        await c.answer("Этот аккаунт вам не принадлежит", show_alert=True)
+        return
+
+    descriptions = {
+        "day1": "Продвижение аккаунта на 24 часа",
+        "day3": "Продвижение аккаунта на 3 дня",
+        "day7": "Продвижение аккаунта на 7 дней"
+    }
+
+    await c.bot.send_invoice(
+        chat_id=c.from_user.id,
+        title="🚀 Продвижение аккаунта",
+        description=descriptions[promo_type],
+        payload=f"promo:{profile_id}:{promo_type}:{stars}:{days}",
+        provider_token="",
+        currency="XTR",
+        prices=[
+            LabeledPrice(
+                label="Продвижение",
+                amount=stars
+            )
+        ]
+    )
+
+    await c.answer()
+    @dp.pre_checkout_query()
+async def pre_checkout(query: PreCheckoutQuery):
+    await query.answer(ok=True)
+    @dp.message(F.successful_payment)
+async def successful_payment(message: Message):
+    payment = message.successful_payment
+
+    if payment.currency != "XTR":
+        return
+
+    parts = payment.invoice_payload.split(":")
+
+    if len(parts) != 5 or parts[0] != "promo":
+        return
+
+    profile_id = int(parts[1])
+    promo_type = parts[2]
+    stars = int(parts[3])
+    days = int(parts[4])
+
+    prices = {
+        "day1": 250,
+        "day3": 500,
+        "day7": 1000
+    }
+
+    if promo_type not in prices:
+        return
+
+    if stars != prices[promo_type]:
+        return
+
+    if payment.total_amount != stars:
+        return
+
+    tg_id = message.from_user.id
+
+    conn = db()
+
+    profile = conn.execute("""
+    SELECT id
+    FROM profiles
+    WHERE id=? AND tg_id=? AND active=1
+    """, (profile_id, tg_id)).fetchone()
+
+    if not profile:
+        conn.close()
+        return
+
+    conn.execute("""
+    INSERT INTO promotions
+    (tg_id, profile_id, promotion_type, expires_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
+    """, (tg_id, profile_id, promo_type, days))
+
+    conn.commit()
+    conn.close()
+
+    await message.answer(
+        f"✅ <b>Оплата прошла успешно!</b>\n\n"
+        f"🚀 Продвижение аккаунта активировано на <b>{days} дней</b>.\n"
+        f"💎 Оплачено: <b>{stars} Stars</b>"
+    )
 async def cb_buy_promo(c: CallbackQuery):
     parts = c.data.split(":")
 
