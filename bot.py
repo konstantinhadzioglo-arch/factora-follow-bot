@@ -480,7 +480,14 @@ async def successful_payment(message: Message):
 
     if stars != prices[promo_type]:
         return
+    expected_days = {
+        "day1": 1,
+        "day3": 3,
+        "day7": 7
+    }[promo_type]
 
+    if days != expected_days:
+        return
     if payment.total_amount != stars:
         return
 
@@ -511,7 +518,7 @@ ON CONFLICT DO NOTHING
     payment.telegram_payment_charge_id
 ))
 
-    if cursor.rowcount == 0:
+        if cursor.rowcount == 0:
         conn.close()
         return
 
@@ -531,7 +538,21 @@ async def cb_buy_promo(c: CallbackQuery):async def cb_buy_promo(c: CallbackQuery
     promo_type = parts[2]
     cost = int(parts[3])
     days = int(parts[4])
-    
+    prices = {
+        "day1": (100, 1),
+        "day3": (250, 3),
+        "day7": (500, 7)
+    }
+
+    if promo_type not in prices:
+        await c.answer("Ошибка тарифа", show_alert=True)
+        return
+
+    expected_cost, expected_days = prices[promo_type]
+
+    if cost != expected_cost or days != expected_days:
+        await c.answer("Ошибка тарифа", show_alert=True)
+        return
     tg_id = c.from_user.id
 
     conn = db()
@@ -580,14 +601,16 @@ VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
 
     conn.close()
 
-    names = {
-        "boost": "🚀 Аккаунт поднят в выдаче",
-        "popular": "🔥 Аккаунт добавлен в «Популярные»",
-        "pin": "📌 Аккаунт закреплён выше остальных",
-        "vip": "👑 VIP-продвижение активировано на 24 часа",
-        "mass": "🚀 Массовое продвижение активировано"
-    }
-
+names = {
+    "day1": "🚀 Продвижение аккаунта на 24 часа",
+    "day3": "🚀 Продвижение аккаунта на 3 дня",
+    "day7": "🚀 Продвижение аккаунта на 7 дней"
+}
+duration = {
+    1: "1 день",
+    3: "3 дня",
+    7: "7 дней"
+}.get(days, f"{days} дней")
     result = names.get(
         promo_type,
         "✅ Продвижение активировано"
@@ -597,7 +620,7 @@ VALUES (?, ?, ?, CURRENT_TIMESTAMP + (? * INTERVAL '1 day'))
         f"{result}\n\n"
         f"Списано: <b>{cost} ⭐</b>\n"
         f"Осталось: <b>{new_balance} ⭐</b>\n\n"
-        f"Продвижение действует <b>{days} день</b>.",
+        f"Продвижение действует <b>{duration}</b>."
         reply_markup=back()
     )
 
