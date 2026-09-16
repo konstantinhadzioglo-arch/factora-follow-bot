@@ -348,20 +348,20 @@ async def cb_promo_profile(c: CallbackQuery):
     ],
     [
         InlineKeyboardButton(
-            text="💎 250 Stars — 24 часа",
-            callback_data=f"buy_stars:{profile_id}:day1:250:1"
+            text="💎 50 Stars — 24 часа",
+            callback_data=f"buy_stars:{profile_id}:day1:50:1"
         )
     ],
     [
         InlineKeyboardButton(
-            text="💎 500 Stars — 3 дня",
-            callback_data=f"buy_stars:{profile_id}:day3:500:3"
+            text="💎 150 Stars — 3 дня",
+            callback_data=f"buy_stars:{profile_id}:day3:150:3"
         )
     ],
     [
         InlineKeyboardButton(
-            text="💎 1000 Stars — 7 дней",
-            callback_data=f"buy_stars:{profile_id}:day7:1000:7"
+            text="💎 300 Stars — 7 дней",
+            callback_data=f"buy_stars:{profile_id}:day7:300:7"
         )
     ],
     [
@@ -394,9 +394,9 @@ async def cb_buy_stars(c: CallbackQuery):
     days = int(parts[4])
 
     prices = {
-        "day1": 250,
-        "day3": 500,
-        "day7": 1000
+        "day1": 50,
+        "day3": 150,
+        "day7": 300
     }
 
     if promo_type not in prices or stars != prices[promo_type]:
@@ -460,9 +460,9 @@ async def successful_payment(message: Message):
     days = int(parts[4])
 
     prices = {
-        "day1": 250,
-        "day3": 500,
-        "day7": 1000
+        "day1": 50,
+        "day3": 150,
+        "day7": 300
     }
 
     if promo_type not in prices:
