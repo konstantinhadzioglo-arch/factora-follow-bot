@@ -518,7 +518,7 @@ ON CONFLICT DO NOTHING
     payment.telegram_payment_charge_id
 ))
 
-        if cursor.rowcount == 0:
+    if cursor.rowcount == 0:
         conn.close()
         return
 
